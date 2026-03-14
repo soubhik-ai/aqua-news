@@ -440,13 +440,11 @@ def main() -> None:
     )
 
     # Sidebar controls
-    config_path = st.sidebar.text_input("Config path", value="config/feeds.json")
-
     if st.sidebar.button("Refresh feeds"):
         st.cache_data.clear()
 
     with st.spinner("Ingesting feeds and clustering..."):
-        results = run_pipeline(config_path)
+        results = run_pipeline("config/feeds.json")
 
     if not results:
         st.warning("No article clusters found. Try again later or check feed URLs.")
