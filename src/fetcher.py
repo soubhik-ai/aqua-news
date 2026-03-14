@@ -7,6 +7,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+import numpy as np
+
 from google.cloud import storage
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -76,8 +78,15 @@ def upload_to_gcs(data: list[dict]) -> None:
     client = storage.Client()
     bucket = client.bucket(BUCKET_NAME)
     blob = bucket.blob(BLOB_NAME)
+    def _default(obj):
+        if isinstance(obj, (np.integer,)):
+            return int(obj)
+        if isinstance(obj, (np.floating,)):
+            return float(obj)
+        raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
     blob.upload_from_string(
-        json.dumps(payload, ensure_ascii=False),
+        json.dumps(payload, ensure_ascii=False, default=_default),
         content_type="application/json",
     )
     logger.info("Uploaded %d clusters to gs://%s/%s", len(data), BUCKET_NAME, BLOB_NAME)
