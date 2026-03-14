@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.streamlit/
+*.egg-info/
+dist/
+build/
+.env
+nltk_data/

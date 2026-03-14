@@ -1,0 +1,10 @@
+services:
+  news-aggregator:
+    build: .
+    ports:
+      - "${PORT:-8501}:8501"
+    volumes:
+      - ./config:/app/config:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
