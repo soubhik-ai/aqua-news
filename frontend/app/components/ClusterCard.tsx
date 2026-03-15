@@ -59,6 +59,25 @@ export function ClusterCard({ data }: ClusterProps) {
         ))}
       </div>
 
+      {/* Lead source label */}
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400">
+          Lead article from
+        </span>
+        <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-stone-700">
+          {lead.domain}
+        </span>
+        <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
+          lead.bias_score === 0
+            ? "bg-stone-200 text-stone-700"
+            : lead.bias_score < 0
+            ? "bg-blue-50 text-blue-700 border border-blue-200"
+            : "bg-red-50 text-red-700 border border-red-200"
+        }`}>
+          {lead.bias_score === 0 ? "CENTER" : lead.bias_score < 0 ? `LEFT ${lead.bias_score}` : `RIGHT +${lead.bias_score}`}
+        </span>
+      </div>
+
       {/* Main headline */}
       <h2 className="text-2xl md:text-3xl font-serif font-bold leading-tight mb-2 text-stone-900 heading-balance">
         <a
@@ -73,13 +92,9 @@ export function ClusterCard({ data }: ClusterProps) {
 
       {/* Source & count metadata */}
       <div className="flex items-center gap-3 text-xs font-mono text-stone-500 mb-6">
-        <span className="font-semibold text-stone-700">{lead.domain}</span>
+        <span>{data.article_count} sources covering this story</span>
         <span className="w-1 h-1 rounded-full bg-stone-300" />
-        <span>
-          Bias: {lead.bias_score > 0 ? `+${lead.bias_score}` : lead.bias_score}
-        </span>
-        <span className="w-1 h-1 rounded-full bg-stone-300" />
-        <span>{data.article_count} sources covering this</span>
+        <span>Lead picked as most centrist source</span>
       </div>
 
       {/* Summary */}
@@ -106,7 +121,7 @@ export function ClusterCard({ data }: ClusterProps) {
             </span>
           </div>
         </div>
-        <BiasBar scores={metrics.scores} />
+        <BiasBar scores={metrics.scores} leadScore={lead.bias_score} />
       </div>
 
       {/* Expandable Sources List */}

@@ -3,10 +3,11 @@ import { cn } from "@/lib/utils";
 
 interface BiasBarProps {
   scores: number[];
+  leadScore: number;
   className?: string;
 }
 
-export function BiasBar({ scores, className }: BiasBarProps) {
+export function BiasBar({ scores, leadScore, className }: BiasBarProps) {
   return (
     <div className={cn("w-full mt-4 flex flex-col gap-2", className)}>
       <div className="relative w-full h-1 bg-stone-200 rounded-full overflow-hidden">
@@ -22,14 +23,19 @@ export function BiasBar({ scores, className }: BiasBarProps) {
 
       <div className="relative w-full h-6 flex items-center">
         {scores.map((score, i) => {
-          // Score is -10 to 10. Map to 0% to 100%
           const percentage = ((score + 10) / 20) * 100;
+          const isLead = score === leadScore;
           return (
             <div
               key={i}
-              className="absolute w-3 h-3 rounded-full bg-stone-800 border-2 border-white shadow-sm transform -translate-x-1/2 transition-transform hover:scale-150 cursor-pointer"
+              className={cn(
+                "absolute transform -translate-x-1/2 transition-transform hover:scale-150 cursor-pointer",
+                isLead
+                  ? "w-4 h-4 rounded-full bg-stone-900 border-2 border-stone-400 shadow-md z-20 ring-2 ring-stone-300"
+                  : "w-3 h-3 rounded-full bg-stone-400 border-2 border-white shadow-sm"
+              )}
               style={{ left: `${percentage}%` }}
-              title={`Bias Score: ${score}`}
+              title={isLead ? `Lead article bias: ${score}` : `Source bias: ${score}`}
             />
           );
         })}
@@ -37,7 +43,10 @@ export function BiasBar({ scores, className }: BiasBarProps) {
 
       <div className="flex justify-between text-[10px] uppercase tracking-wider text-stone-500 font-medium">
         <span>Far Left</span>
-        <span>Center</span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-2 h-2 rounded-full bg-stone-900 border border-stone-400"></span>
+          <span>= Lead</span>
+        </span>
         <span>Far Right</span>
       </div>
     </div>
