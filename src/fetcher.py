@@ -139,7 +139,8 @@ def upload_to_gcs(data: list[dict]) -> None:
         json.dumps(payload, ensure_ascii=False, default=_default),
         content_type="application/json",
     )
-    logger.info("Uploaded %d clusters to gs://%s/%s", len(data), BUCKET_NAME, BLOB_NAME)
+    blob.make_public()
+    logger.info("Uploaded %d clusters to gs://%s/%s (public)", len(data), BUCKET_NAME, BLOB_NAME)
 
 
 def main():

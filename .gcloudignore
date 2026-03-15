@@ -1,0 +1,9 @@
+node_modules
+frontend/node_modules
+frontend/.next
+.git
+cache
+__pycache__
+*.pyc
+.env
+nltk_data
