@@ -1,6 +1,6 @@
 # Aqua News MCP Server
 
-An [MCP](https://modelcontextprotocol.io) server that exposes Aqua News data to AI assistants like Claude.
+An [MCP](https://modelcontextprotocol.io) server that lets AI assistants query your news data.
 
 ## Tools
 
@@ -12,42 +12,57 @@ An [MCP](https://modelcontextprotocol.io) server that exposes Aqua News data to 
 
 ## Setup
 
-### With Claude Desktop
+### 1. Run the fetcher to get data
 
-Add to your `claude_desktop_config.json`:
+```bash
+# from the repo root
+pip install -r requirements.txt
+cp config/feeds.example.json config/feeds.json
+python src/fetcher.py
+```
+
+This creates `cache/latest.json` which the MCP server reads automatically.
+
+### 2. Install MCP dependencies
+
+```bash
+pip install -r mcp/requirements.txt
+```
+
+### 3. Connect to your AI assistant
+
+**Claude Desktop** - add to `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "aqua-news": {
       "command": "python",
-      "args": ["path/to/aqua-news/mcp/server.py"],
-      "env": {
-        "AQUA_NEWS_URL": "https://storage.googleapis.com/YOUR_BUCKET/latest.json"
-      }
+      "args": ["/absolute/path/to/aqua-news/mcp/server.py"]
     }
   }
 }
 ```
 
-### With Claude Code
+**Claude Code:**
 
 ```bash
 claude mcp add aqua-news python /path/to/aqua-news/mcp/server.py
 ```
 
-### Install dependencies
+### Data sources (in priority order)
 
-```bash
-pip install -r mcp/requirements.txt
-```
+1. `AQUA_NEWS_URL` env var - any HTTP URL serving the cluster JSON
+2. `GCS_BUCKET` env var - builds a GCS public URL
+3. `cache/latest.json` - local file from running the fetcher
 
-## Example Queries
+For local use you don't need any env vars. Just run the fetcher once and the MCP server picks it up.
 
-Once connected, you can ask your AI assistant:
+## Example queries
+
+Once connected, you can ask things like:
 
 - "What are today's top stories?"
 - "Search for stories about Iran"
 - "Which stories have the widest bias spread?"
 - "Show me finance stories from India"
-- "What are the most left-leaning stories today?"

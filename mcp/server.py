@@ -20,7 +20,7 @@ _CACHE_TTL = 300  # 5 minutes
 
 
 def _get_data() -> dict:
-    """Fetch the latest cluster data, with in-memory caching."""
+    """Load cluster data. Checks (in order): in-memory cache, remote URL, local file."""
     global _cache, _cache_ts
     import time
 
@@ -28,22 +28,33 @@ def _get_data() -> dict:
     if _cache and (now - _cache_ts) < _CACHE_TTL:
         return _cache
 
-    bucket = os.environ.get("GCS_BUCKET")
-    blob = os.environ.get("GCS_BLOB", "latest.json")
+    # 1. Remote URL (explicit or built from GCS bucket env)
+    url = os.environ.get("AQUA_NEWS_URL")
+    if not url:
+        bucket = os.environ.get("GCS_BUCKET")
+        blob = os.environ.get("GCS_BLOB", "latest.json")
+        if bucket:
+            url = f"https://storage.googleapis.com/{bucket}/{blob}"
 
-    if bucket:
-        url = f"https://storage.googleapis.com/{bucket}/{blob}"
-    else:
-        url = os.environ.get(
-            "AQUA_NEWS_URL",
-            "https://storage.googleapis.com/aqua-news-cache/latest.json",
-        )
+    if url:
+        resp = httpx.get(url, timeout=15)
+        resp.raise_for_status()
+        _cache = resp.json()
+        _cache_ts = now
+        return _cache
 
-    resp = httpx.get(url, timeout=15)
-    resp.raise_for_status()
-    _cache = resp.json()
-    _cache_ts = now
-    return _cache
+    # 2. Local cache/latest.json (created by running the fetcher locally)
+    local_path = os.path.join(os.path.dirname(__file__), "..", "cache", "latest.json")
+    if os.path.exists(local_path):
+        with open(local_path) as f:
+            _cache = json.load(f)
+        _cache_ts = now
+        return _cache
+
+    raise RuntimeError(
+        "No data source found. Either set AQUA_NEWS_URL, set GCS_BUCKET, "
+        "or run 'python src/fetcher.py' to create a local cache."
+    )
 
 
 # ── Tools ────────────────────────────────────────────────────────────────────

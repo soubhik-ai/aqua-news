@@ -28,7 +28,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-BUCKET_NAME = os.environ["GCS_BUCKET"]
+BUCKET_NAME = os.environ.get("GCS_BUCKET", "")
 BLOB_NAME = os.environ.get("GCS_BLOB", "latest.json")
 CACHE_DIR = Path(__file__).resolve().parent.parent / "cache"
 
@@ -120,27 +120,42 @@ def run_pipeline() -> list[dict]:
     return results
 
 
-def upload_to_gcs(data: list[dict]) -> None:
-    payload = {
+def _json_default(obj):
+    if isinstance(obj, (np.integer,)):
+        return int(obj)
+    if isinstance(obj, (np.floating,)):
+        return float(obj)
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
+
+def _make_payload(data: list[dict]) -> dict:
+    return {
         "fetched_at": datetime.now(timezone.utc).isoformat(),
         "cluster_count": len(data),
         "clusters": data,
     }
+
+
+def upload_to_gcs(data: list[dict]) -> None:
+    payload = _make_payload(data)
     client = storage.Client()
     bucket = client.bucket(BUCKET_NAME)
     blob = bucket.blob(BLOB_NAME)
-    def _default(obj):
-        if isinstance(obj, (np.integer,)):
-            return int(obj)
-        if isinstance(obj, (np.floating,)):
-            return float(obj)
-        raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
-
     blob.upload_from_string(
-        json.dumps(payload, ensure_ascii=False, default=_default),
+        json.dumps(payload, ensure_ascii=False, default=_json_default),
         content_type="application/json",
     )
     logger.info("Uploaded %d clusters to gs://%s/%s", len(data), BUCKET_NAME, BLOB_NAME)
+
+
+def _save_results_local(data: list[dict]) -> None:
+    """Save clustered output locally so MCP server and other tools can use it."""
+    CACHE_DIR.mkdir(exist_ok=True)
+    payload = _make_payload(data)
+    path = CACHE_DIR / "latest.json"
+    with open(path, "w") as f:
+        json.dump(payload, f, ensure_ascii=False, default=_json_default)
+    logger.info("Saved %d clusters to %s", len(data), path)
 
 
 def main():
@@ -149,7 +164,11 @@ def main():
     if not results:
         logger.warning("No clusters produced - skipping upload")
         return
-    upload_to_gcs(results)
+    _save_results_local(results)
+    if os.environ.get("GCS_BUCKET"):
+        upload_to_gcs(results)
+    else:
+        logger.info("GCS_BUCKET not set - skipping upload (local only)")
     logger.info("Done.")
 
 
