@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import html
 import json
 import logging
+import math
 from urllib.parse import quote
 
 import streamlit as st
@@ -21,13 +22,13 @@ logging.basicConfig(
 # ── Page config ──────────────────────────────────────────────────────────────
 
 st.set_page_config(
-    page_title="News Aggregator",
+    page_title="aqua news",
     page_icon="",
     layout="centered",
     initial_sidebar_state="collapsed",
 )
 
-# ── Minimal B&W CSS + PWA meta ──────────────────────────────────────────────
+# ── Minimal B&W CSS ──────────────────────────────────────────────────────────
 
 _CSS = """\
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -46,13 +47,13 @@ color: #000000;
 max-width: 760px;
 padding: 1.5rem 1.2rem 4rem 1.2rem;
 }
-.stApp {
-background-color: #ffffff;
-}
+.stApp { background-color: #ffffff; }
+
+/* ── Header ── */
 .app-header {
 border-bottom: 3px solid #000000;
 padding-bottom: 0.75rem;
-margin-bottom: 2rem;
+margin-bottom: 1.5rem;
 }
 .app-header h1 {
 color: #000000;
@@ -68,66 +69,134 @@ font-family: 'Inter', sans-serif;
 font-size: 0.8rem;
 margin: 0.3rem 0 0 0;
 }
+
+/* ── Search ── */
+.stTextInput > div > div > input {
+border: 1px solid #000 !important;
+border-radius: 0 !important;
+font-family: 'Inter', sans-serif !important;
+font-size: 0.88rem !important;
+padding: 0.6rem 0.9rem !important;
+}
+.stTextInput > div > div > input:focus {
+border-color: #000 !important;
+box-shadow: 0 0 0 1px #000 !important;
+}
+
+/* ── Tabs ── */
+.stTabs [data-baseweb="tab-list"] {
+gap: 0;
+border-bottom: 1px solid #e0e0e0;
+}
+.stTabs [data-baseweb="tab"] {
+font-family: 'IBM Plex Mono', monospace !important;
+font-size: 0.78rem !important;
+text-transform: uppercase;
+letter-spacing: 0.04em;
+padding: 0.6rem 1rem !important;
+color: #777 !important;
+border-bottom: 2px solid transparent;
+background: transparent !important;
+}
+.stTabs [aria-selected="true"] {
+color: #000 !important;
+border-bottom: 2px solid #000 !important;
+font-weight: 600 !important;
+}
+
+/* ── Stats bar ── */
+.stats-bar {
+display: flex;
+gap: 1.5rem;
+padding: 0.8rem 0;
+margin-bottom: 1rem;
+border-bottom: 1px solid #e0e0e0;
+font-family: 'IBM Plex Mono', monospace;
+font-size: 0.74rem;
+color: #555;
+}
+.stats-bar .stat-val {
+color: #000;
+font-weight: 600;
+font-size: 0.88rem;
+}
+
+/* ── Section header ── */
+.section-header {
+font-family: 'IBM Plex Mono', monospace;
+font-size: 0.72rem;
+text-transform: uppercase;
+letter-spacing: 0.08em;
+color: #999;
+margin: 1.5rem 0 0.8rem 0;
+padding-bottom: 0.4rem;
+border-bottom: 1px solid #e0e0e0;
+}
+
+/* ── Cluster card ── */
 .cluster-card {
 background: #ffffff;
-border: 1px solid #000000;
-border-radius: 0;
-padding: 2rem;
-margin-bottom: 2rem;
+border: 1px solid #e0e0e0;
+border-radius: 2px;
+padding: 1.5rem;
+margin-bottom: 1rem;
+transition: border-color 0.15s;
+}
+.cluster-card:hover {
+border-color: #000000;
 }
 .cluster-card .lead-title {
 color: #000000;
 font-family: 'Inter', sans-serif;
-font-size: 1.15rem;
+font-size: 1.05rem;
 font-weight: 600;
 line-height: 1.4;
-margin: 0 0 1rem 0;
+margin: 0 0 0.6rem 0;
 }
 .cluster-card .lead-title a {
 color: #000000;
 text-decoration: none;
-border-bottom: 1px solid #999999;
 }
 .cluster-card .lead-title a:hover {
-border-bottom-color: #000000;
+border-bottom: 1px solid #000000;
 }
 .cluster-card .meta {
-color: #555555;
+color: #777;
 font-family: 'IBM Plex Mono', monospace;
-font-size: 0.76rem;
-margin-bottom: 1rem;
+font-size: 0.72rem;
+margin-bottom: 0.6rem;
 display: flex;
 flex-wrap: wrap;
-gap: 0.3rem 1rem;
+gap: 0.2rem 0.8rem;
 }
 .tag {
 display: inline-block;
-background: #ffffff;
-border: 1px solid #000000;
-border-radius: 0;
-padding: 0.15rem 0.5rem;
-font-size: 0.68rem;
+background: #f5f5f5;
+border: 1px solid #ddd;
+border-radius: 2px;
+padding: 0.1rem 0.45rem;
+font-size: 0.65rem;
 font-family: 'IBM Plex Mono', monospace;
-color: #000000;
+color: #555;
 text-transform: uppercase;
-letter-spacing: 0.05em;
+letter-spacing: 0.04em;
 }
 .cluster-card .summary {
 color: #333333;
 font-family: 'Inter', sans-serif;
-font-size: 0.92rem;
-line-height: 1.7;
-margin: 1.2rem 0;
+font-size: 0.88rem;
+line-height: 1.65;
+margin: 0.8rem 0;
 }
-.bias-bar-wrap {
-margin-top: 1rem;
-}
+
+/* ── Bias bar ── */
+.bias-bar-wrap { margin-top: 0.8rem; }
 .bias-bar-container {
 position: relative;
-background: #f0f0f0;
-height: 36px;
-border-radius: 0;
-border: 1px solid #000000;
+background: #f5f5f5;
+height: 28px;
+border-radius: 2px;
+border: 1px solid #e0e0e0;
 overflow: visible;
 }
 .bias-bar-center {
@@ -135,48 +204,52 @@ position: absolute;
 left: 50%;
 top: 0;
 bottom: 0;
-width: 2px;
-background: #000000;
+width: 1px;
+background: #ccc;
 }
 .bias-marker {
 position: absolute;
 top: 50%;
-width: 12px;
-height: 12px;
+width: 10px;
+height: 10px;
 background: #000000;
+border-radius: 50%;
 transform: translate(-50%, -50%);
 transition: transform 0.15s;
 }
 .bias-marker:hover {
-transform: translate(-50%, -50%) scale(1.4);
+transform: translate(-50%, -50%) scale(1.5);
 }
 .bias-legend {
 display: flex;
 justify-content: space-between;
-color: #555555;
+color: #999;
 font-family: 'IBM Plex Mono', monospace;
-font-size: 0.68rem;
-margin-top: 0.35rem;
+font-size: 0.62rem;
+margin-top: 0.25rem;
 }
 .metric-row {
 display: flex;
 flex-wrap: wrap;
-gap: 0.3rem 1.5rem;
-color: #555555;
+gap: 0.2rem 1.2rem;
+color: #777;
 font-family: 'IBM Plex Mono', monospace;
-font-size: 0.76rem;
-margin-top: 0.75rem;
+font-size: 0.72rem;
+margin-top: 0.6rem;
 }
+
+/* ── Source links ── */
 .source-links {
-margin-top: 1.2rem;
-padding-top: 1rem;
-border-top: 1px solid #e0e0e0;
+margin-top: 0.8rem;
+padding-top: 0.8rem;
+border-top: 1px solid #f0f0f0;
 }
 .source-links summary {
-color: #333333;
-font-family: 'Inter', sans-serif;
-font-size: 0.8rem;
-font-weight: 500;
+color: #555;
+font-family: 'IBM Plex Mono', monospace;
+font-size: 0.72rem;
+text-transform: uppercase;
+letter-spacing: 0.04em;
 cursor: pointer;
 -webkit-tap-highlight-color: transparent;
 padding: 0.3rem 0;
@@ -185,82 +258,100 @@ padding: 0.3rem 0;
 display: flex;
 justify-content: space-between;
 align-items: center;
-padding: 0.5rem 0;
-border-bottom: 1px solid #f0f0f0;
+padding: 0.4rem 0;
+border-bottom: 1px solid #f8f8f8;
 }
-.source-links .link-row:last-child {
-border-bottom: none;
-}
+.source-links .link-row:last-child { border-bottom: none; }
 .source-links a {
 color: #333333;
 text-decoration: none;
 font-family: 'Inter', sans-serif;
-font-size: 0.78rem;
+font-size: 0.76rem;
 word-break: break-word;
 }
 .source-links a:hover {
 color: #000000;
-border-bottom: 1px solid #000000;
+border-bottom: 1px solid #000;
 }
 .source-links .link-bias {
-color: #555555;
+color: #999;
 font-family: 'IBM Plex Mono', monospace;
-font-size: 0.72rem;
+font-size: 0.68rem;
 white-space: nowrap;
 margin-left: 0.75rem;
 }
+
+/* ── Share buttons ── */
 .share-row {
 display: flex;
 flex-wrap: wrap;
-gap: 0.5rem;
-margin-top: 1.2rem;
+gap: 0.4rem;
+margin-top: 0.8rem;
 }
 .share-btn {
 display: inline-flex;
 align-items: center;
-gap: 0.4rem;
-background: #ffffff;
-border: 1px solid #000000;
-border-radius: 0;
-padding: 0.5rem 0.8rem;
-color: #000000;
-font-size: 0.75rem;
+gap: 0.35rem;
+background: #fff;
+border: 1px solid #ddd;
+border-radius: 2px;
+padding: 0.4rem 0.65rem;
+color: #555;
+font-size: 0.68rem;
 font-family: 'IBM Plex Mono', monospace;
 text-decoration: none;
 -webkit-tap-highlight-color: transparent;
 cursor: pointer;
-min-height: 44px;
-min-width: 44px;
+min-height: 36px;
+min-width: 36px;
 justify-content: center;
-transition: background 0.12s, color 0.12s;
+transition: all 0.12s;
 }
 .share-btn:hover {
-background: #000000;
-color: #ffffff;
+background: #000;
+color: #fff;
+border-color: #000;
 }
 .share-btn svg {
-width: 16px;
-height: 16px;
+width: 14px;
+height: 14px;
 fill: currentColor;
 flex-shrink: 0;
 }
+
+/* ── Pagination ── */
+.page-nav {
+display: flex;
+justify-content: center;
+align-items: center;
+gap: 0.8rem;
+padding: 1rem 0;
+margin-top: 0.5rem;
+font-family: 'IBM Plex Mono', monospace;
+font-size: 0.76rem;
+color: #555;
+}
+
+/* ── Empty state ── */
+.empty-state {
+text-align: center;
+padding: 3rem 1rem;
+color: #999;
+font-family: 'IBM Plex Mono', monospace;
+font-size: 0.82rem;
+}
+
 @media (max-width: 640px) {
 .main .block-container {
 padding: 0.8rem 0.8rem 3rem 0.8rem;
 }
-.cluster-card {
-padding: 1.4rem;
-}
-.cluster-card .lead-title {
-font-size: 1rem;
-}
-.metric-row {
-gap: 0.2rem 0.8rem;
-}
+.cluster-card { padding: 1.1rem; }
+.cluster-card .lead-title { font-size: 0.95rem; }
 .share-btn {
-padding: 0.45rem 0.6rem;
-font-size: 0.7rem;
+padding: 0.35rem 0.5rem;
+font-size: 0.65rem;
 }
+.stats-bar { gap: 1rem; font-size: 0.7rem; }
 }
 #MainMenu, header, footer { visibility: hidden; }
 .stDeployButton { display: none; }
@@ -277,8 +368,21 @@ _ICON_X = '<svg viewBox="0 0 24 24"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22
 _ICON_EM = '<svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>'
 _ICON_LN = '<svg viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>'
 
+ITEMS_PER_PAGE = 5
 
-# ── HTML builders (no indentation — critical for Streamlit rendering) ────────
+# Category display config
+_CATEGORY_LABELS = {
+    "general": "Top Stories",
+    "geopolitics": "World & Politics",
+    "finance": "Business & Finance",
+    "technology": "Technology",
+    "science": "Science",
+    "culture": "Culture & Entertainment",
+}
+_CATEGORY_ORDER = ["general", "geopolitics", "finance", "technology", "science", "culture"]
+
+
+# ── HTML builders ────────────────────────────────────────────────────────────
 
 
 def _safe_url(url: str) -> str:
@@ -297,13 +401,12 @@ def _share_buttons_html(title: str, url: str) -> str:
     tg = f"https://t.me/share/url?url={u}&text={t}"
     xr = f"https://twitter.com/intent/tweet?text={t}&url={u}"
     em = f"mailto:?subject={t}&body={t}%0A%0A{u}"
-    # Copy link: plain link that shows the URL — no inline JS to avoid Streamlit escaping
     parts = [
         f'<a class="share-btn" href="{wa}" target="_blank" rel="noopener">{_ICON_WA} WhatsApp</a>',
         f'<a class="share-btn" href="{tg}" target="_blank" rel="noopener">{_ICON_TG} Telegram</a>',
         f'<a class="share-btn" href="{xr}" target="_blank" rel="noopener">{_ICON_X} Post</a>',
         f'<a class="share-btn" href="{em}">{_ICON_EM} Email</a>',
-        f'<a class="share-btn" href="{safe}" target="_blank" rel="noopener">{_ICON_LN} Open link</a>',
+        f'<a class="share-btn" href="{safe}" target="_blank" rel="noopener">{_ICON_LN} Open</a>',
     ]
     return '<div class="share-row">' + "".join(parts) + "</div>"
 
@@ -319,9 +422,9 @@ def _bias_bar_html(scores: list[int]) -> str:
     bar = f'<div class="bias-bar-container">{inner}</div>'
     legend = (
         '<div class="bias-legend">'
-        "<span>Left (-10)</span>"
+        "<span>Left</span>"
         "<span>Center</span>"
-        "<span>Right (+10)</span>"
+        "<span>Right</span>"
         "</div>"
     )
     return f'<div class="bias-bar-wrap">{bar}{legend}</div>'
@@ -364,21 +467,21 @@ def _render_cluster(d: dict) -> None:
 
     meta = (
         f'<span>{html.escape(lead["domain"])}</span>'
-        f'<span>Lead bias: {lead["bias_score"]:+d}</span>'
+        f'<span>Bias: {lead["bias_score"]:+d}</span>'
         f'<span>{d["article_count"]} sources</span>'
     )
 
     metrics = (
-        f'<span>Mean bias: {bm["mean"]:+.2f}</span>'
-        f'<span>Std: {bm["std"]:.2f}</span>'
-        f'<span>Range: [{bm["min_score"]:+d}, {bm["max_score"]:+d}]</span>'
+        f'<span>Mean: {bm["mean"]:+.1f}</span>'
+        f'<span>Std: {bm["std"]:.1f}</span>'
+        f'<span>[{bm["min_score"]:+d}, {bm["max_score"]:+d}]</span>'
     )
 
     card = (
         '<div class="cluster-card">'
         f'<div class="lead-title"><a href="{url_safe}" target="_blank" rel="noopener">{title_safe}</a></div>'
         f'<div class="meta">{meta}</div>'
-        f'<div style="margin-bottom:1rem">{tags}</div>'
+        f'<div style="margin-bottom:0.6rem">{tags}</div>'
         f'<div class="summary">{summary_safe}</div>'
         f'<div class="metric-row">{metrics}</div>'
         f'{_bias_bar_html(bm["scores"])}'
@@ -407,13 +510,51 @@ def load_cached_results() -> tuple[list[dict], str]:
     return payload.get("clusters", []), payload.get("fetched_at", "")
 
 
+# ── Helpers ──────────────────────────────────────────────────────────────────
+
+
+def _primary_category(d: dict) -> str:
+    """Pick the best category for a cluster based on priority order."""
+    cats = set(d.get("categories", []))
+    for cat in _CATEGORY_ORDER:
+        if cat in cats:
+            return cat
+    return "general"
+
+
+def _matches_search(d: dict, query: str) -> bool:
+    """Check if a cluster matches the search query."""
+    if not query:
+        return True
+    q = query.lower()
+    lead = d["lead_article"]
+    if q in lead["title"].lower():
+        return True
+    if q in d["summary"].lower():
+        return True
+    if q in lead["domain"].lower():
+        return True
+    for a in d["all_articles"]:
+        if q in a["title"].lower():
+            return True
+    return False
+
+
+def _paginate(items: list, page: int, per_page: int) -> tuple[list, int]:
+    """Return a page slice and total page count."""
+    total_pages = max(1, math.ceil(len(items) / per_page))
+    page = max(1, min(page, total_pages))
+    start = (page - 1) * per_page
+    return items[start : start + per_page], total_pages
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 
 def main() -> None:
     st.markdown(
         '<div class="app-header">'
-        "<h1>NEWS AGGREGATOR</h1>"
+        "<h1>AQUA NEWS</h1>"
         "<p>Multi-source clustering with bias spectrum analysis</p>"
         "</div>",
         unsafe_allow_html=True,
@@ -428,36 +569,109 @@ def main() -> None:
         st.warning("No data yet. The daily fetch hasn't run or produced no clusters.")
         return
 
-    if fetched_at:
-        st.caption(f"Last updated: {fetched_at[:19].replace('T', ' ')} UTC")
+    # ── Search bar ───────────────────────────────────────────────────────
+    search_query = st.text_input(
+        "Search stories",
+        placeholder="Search by keyword, topic, or source...",
+        label_visibility="collapsed",
+    )
 
+    # ── Sidebar filters ──────────────────────────────────────────────────
     all_regions = sorted({r for d in results for r in d["regions"]})
-    all_categories = sorted({c for d in results for c in d["categories"]})
-
     st.sidebar.markdown("---")
-    st.sidebar.markdown("**Filters**")
+    st.sidebar.markdown("**Region filter**")
     selected_regions = st.sidebar.multiselect(
-        "Regions", all_regions, default=all_regions
-    )
-    selected_categories = st.sidebar.multiselect(
-        "Categories", all_categories, default=all_categories
+        "Regions", all_regions, default=all_regions, label_visibility="collapsed"
     )
 
+    # ── Apply filters ────────────────────────────────────────────────────
     filtered = [
         d
         for d in results
         if any(r in selected_regions for r in d["regions"])
-        and any(c in selected_categories for c in d["categories"])
+        and _matches_search(d, search_query)
     ]
 
+    # ── Stats bar ────────────────────────────────────────────────────────
+    total_sources = sum(d["article_count"] for d in filtered)
+    ts_display = fetched_at[:16].replace("T", " ") + " UTC" if fetched_at else ""
     st.markdown(
-        f'**{len(filtered)} story cluster{"s" if len(filtered) != 1 else ""}** '
-        f'<span style="color:#555;font-size:0.82rem">({len(results)} total)</span>',
+        f'<div class="stats-bar">'
+        f'<div><span class="stat-val">{len(filtered)}</span> stories</div>'
+        f'<div><span class="stat-val">{total_sources}</span> sources</div>'
+        f"<div>{ts_display}</div>"
+        f"</div>",
         unsafe_allow_html=True,
     )
 
+    if not filtered:
+        st.markdown(
+            '<div class="empty-state">No stories match your search.</div>',
+            unsafe_allow_html=True,
+        )
+        return
+
+    # ── Group by category ────────────────────────────────────────────────
+    by_category: dict[str, list[dict]] = {}
     for d in filtered:
-        _render_cluster(d)
+        cat = _primary_category(d)
+        by_category.setdefault(cat, []).append(d)
+
+    # Build tab list in display order, only for categories with results
+    active_cats = [c for c in _CATEGORY_ORDER if c in by_category]
+    active_cats.append("all")
+    tab_labels = [
+        f"{_CATEGORY_LABELS.get(c, c)}  ({len(by_category[c])})"
+        if c != "all"
+        else f"All  ({len(filtered)})"
+        for c in active_cats
+    ]
+
+    tabs = st.tabs(tab_labels)
+
+    for tab, cat_key in zip(tabs, active_cats):
+        with tab:
+            if cat_key == "all":
+                items = filtered
+            else:
+                items = by_category[cat_key]
+
+            # Pagination
+            page_key = f"page_{cat_key}"
+            if page_key not in st.session_state:
+                st.session_state[page_key] = 1
+
+            page_items, total_pages = _paginate(
+                items, st.session_state[page_key], ITEMS_PER_PAGE
+            )
+
+            for d in page_items:
+                _render_cluster(d)
+
+            # Page controls
+            if total_pages > 1:
+                cols = st.columns([1, 2, 1])
+                with cols[0]:
+                    if st.button(
+                        "Prev", key=f"prev_{cat_key}",
+                        disabled=st.session_state[page_key] <= 1,
+                    ):
+                        st.session_state[page_key] -= 1
+                        st.rerun()
+                with cols[1]:
+                    st.markdown(
+                        f'<div class="page-nav">'
+                        f'{st.session_state[page_key]} / {total_pages}'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+                with cols[2]:
+                    if st.button(
+                        "Next", key=f"next_{cat_key}",
+                        disabled=st.session_state[page_key] >= total_pages,
+                    ):
+                        st.session_state[page_key] += 1
+                        st.rerun()
 
 
 if __name__ == "__main__":
