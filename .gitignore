@@ -6,3 +6,4 @@ dist/
 build/
 .env
 nltk_data/
+cache/

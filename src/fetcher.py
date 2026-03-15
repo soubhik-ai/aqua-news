@@ -1,4 +1,8 @@
-"""Daily fetch job — runs the full pipeline and uploads results to GCS."""
+"""Daily fetch job — runs the full pipeline and uploads results to GCS.
+
+Results are cached locally by date so the pipeline only scrapes feeds once
+per day.  Subsequent runs on the same day reuse the local cache.
+"""
 
 import asyncio
 import json
@@ -13,7 +17,7 @@ from google.cloud import storage
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.acquisition import load_config, ingest_all
+from src.acquisition import load_config, ingest_all, ArticleRecord
 from src.processing import vectorize, cluster_articles
 from src.analysis import analyze_clusters
 
@@ -25,13 +29,59 @@ logger = logging.getLogger(__name__)
 
 BUCKET_NAME = "aqua-news-cache"
 BLOB_NAME = "latest.json"
+CACHE_DIR = Path(__file__).resolve().parent.parent / "cache"
+
+
+# ── Local daily article cache ────────────────────────────────────────────────
+
+def _cache_path_for_today() -> Path:
+    return CACHE_DIR / f"articles_{datetime.now(timezone.utc).strftime('%Y-%m-%d')}.json"
+
+
+def _load_cached_articles() -> list[ArticleRecord] | None:
+    """Return today's cached articles, or None if no cache exists."""
+    path = _cache_path_for_today()
+    if not path.exists():
+        return None
+    try:
+        with open(path) as f:
+            rows = json.load(f)
+        articles = [ArticleRecord(**row) for row in rows]
+        logger.info("Loaded %d articles from local cache %s", len(articles), path.name)
+        return articles
+    except Exception as e:
+        logger.warning("Failed to read cache %s: %s", path, e)
+        return None
+
+
+def _save_articles_cache(articles: list[ArticleRecord]) -> None:
+    """Persist today's articles to a local JSON file."""
+    CACHE_DIR.mkdir(exist_ok=True)
+    path = _cache_path_for_today()
+    with open(path, "w") as f:
+        json.dump([a.to_dict() for a in articles], f, ensure_ascii=False)
+    logger.info("Saved %d articles to local cache %s", len(articles), path.name)
+
+
+# ── Pipeline ─────────────────────────────────────────────────────────────────
+
+def _fetch_articles(sources, settings) -> list[ArticleRecord]:
+    """Return articles from local cache if available, otherwise scrape feeds."""
+    cached = _load_cached_articles()
+    if cached is not None:
+        return cached
+
+    articles = asyncio.run(
+        ingest_all(sources, max_articles=settings.get("max_articles_per_feed", 20))
+    )
+    if articles:
+        _save_articles_cache(articles)
+    return articles
 
 
 def run_pipeline() -> list[dict]:
     sources, settings = load_config("config/feeds.json")
-    articles = asyncio.run(
-        ingest_all(sources, max_articles=settings.get("max_articles_per_feed", 20))
-    )
+    articles = _fetch_articles(sources, settings)
     logger.info("Ingested %d articles", len(articles))
 
     if len(articles) < 2:

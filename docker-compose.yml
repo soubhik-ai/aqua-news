@@ -8,3 +8,12 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
+
+  fetcher:
+    build:
+      context: .
+      dockerfile: Dockerfile.fetcher
+    volumes:
+      - ./config:/app/config:ro
+    environment:
+      - PYTHONUNBUFFERED=1

@@ -281,9 +281,18 @@ _ICON_LN = '<svg viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V
 # ── HTML builders (no indentation — critical for Streamlit rendering) ────────
 
 
+def _safe_url(url: str) -> str:
+    """Sanitize a URL for use in href attributes."""
+    escaped = html.escape(url, quote=True)
+    if escaped.lower().startswith(("http://", "https://")):
+        return escaped
+    return ""
+
+
 def _share_buttons_html(title: str, url: str) -> str:
     t = quote(title)
     u = quote(url)
+    safe = _safe_url(url)
     wa = f"https://api.whatsapp.com/send?text={t}%20{u}"
     tg = f"https://t.me/share/url?url={u}&text={t}"
     xr = f"https://twitter.com/intent/tweet?text={t}&url={u}"
@@ -294,7 +303,7 @@ def _share_buttons_html(title: str, url: str) -> str:
         f'<a class="share-btn" href="{tg}" target="_blank" rel="noopener">{_ICON_TG} Telegram</a>',
         f'<a class="share-btn" href="{xr}" target="_blank" rel="noopener">{_ICON_X} Post</a>',
         f'<a class="share-btn" href="{em}">{_ICON_EM} Email</a>',
-        f'<a class="share-btn" href="{url}" target="_blank" rel="noopener">{_ICON_LN} Open link</a>',
+        f'<a class="share-btn" href="{safe}" target="_blank" rel="noopener">{_ICON_LN} Open link</a>',
     ]
     return '<div class="share-row">' + "".join(parts) + "</div>"
 
@@ -322,9 +331,10 @@ def _source_links_html(articles: list[dict]) -> str:
     rows = []
     for a in articles:
         title_safe = html.escape(a["title"][:80])
+        url_safe = _safe_url(a["url"])
         rows.append(
             f'<div class="link-row">'
-            f'<a href="{a["url"]}" target="_blank" rel="noopener">{a["domain"]}: {title_safe}</a>'
+            f'<a href="{url_safe}" target="_blank" rel="noopener">{a["domain"]}: {title_safe}</a>'
             f'<span class="link-bias">{a["bias_score"]:+d}</span>'
             f"</div>"
         )
@@ -344,15 +354,16 @@ def _render_cluster(d: dict) -> None:
     bm = d["bias_metrics"]
 
     title_safe = html.escape(lead["title"])
+    url_safe = _safe_url(lead["url"])
     summary_safe = html.escape(d["summary"])
 
     tags = "".join(
-        f'<span class="tag">{t}</span> '
+        f'<span class="tag">{html.escape(t)}</span> '
         for t in d["regions"] + d["categories"]
     )
 
     meta = (
-        f'<span>{lead["domain"]}</span>'
+        f'<span>{html.escape(lead["domain"])}</span>'
         f'<span>Lead bias: {lead["bias_score"]:+d}</span>'
         f'<span>{d["article_count"]} sources</span>'
     )
@@ -365,7 +376,7 @@ def _render_cluster(d: dict) -> None:
 
     card = (
         '<div class="cluster-card">'
-        f'<div class="lead-title"><a href="{lead["url"]}" target="_blank" rel="noopener">{title_safe}</a></div>'
+        f'<div class="lead-title"><a href="{url_safe}" target="_blank" rel="noopener">{title_safe}</a></div>'
         f'<div class="meta">{meta}</div>'
         f'<div style="margin-bottom:1rem">{tags}</div>'
         f'<div class="summary">{summary_safe}</div>'
