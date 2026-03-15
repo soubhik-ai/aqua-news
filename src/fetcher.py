@@ -7,6 +7,7 @@ per day.  Subsequent runs on the same day reuse the local cache.
 import asyncio
 import json
 import logging
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -27,7 +28,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-BUCKET_NAME = "aqua-news-cache"
+BUCKET_NAME = os.environ.get("GCS_BUCKET", "aqua-news-cache")
 BLOB_NAME = "latest.json"
 CACHE_DIR = Path(__file__).resolve().parent.parent / "cache"
 
