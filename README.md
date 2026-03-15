@@ -5,11 +5,11 @@
 ![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)
 ![Next.js 16](https://img.shields.io/badge/next.js-16-black.svg)
 
-Every news app shows you one side of a story. This one shows you all of them.
+I was tired of Google News keeping me in its AI bubble with no way to break out and check fresh news. I wasn't sure which sources were misleading me, I couldn't get fresh content on demand, and I didn't want another paid subscription with its own opaque logic.
 
-aqua news pulls articles from dozens of RSS feeds, figures out which ones are about the same story, and shows you where each source lands on the bias spectrum. The "lead" article is always the most centrist source. No AI-generated text, no hallucinated summaries. Just extractive NLP that pulls key sentences from real journalism.
+So I built this. It pulls from RSS feeds, clusters articles about the same story, and shows you where each source sits on a bias spectrum. You pick the sources, you assign the bias scores, you own the whole thing. No AI-generated text, no hallucinated summaries - just extractive NLP that pulls key sentences from real journalism.
 
-I built this because I was tired of reading the same event described completely differently depending on which app I opened. Now I can see the full picture in one place.
+I want to democratise information and this is the first step towards that.
 
 <p align="center">
   <img src="docs/screenshot.png" alt="Aqua News desktop" width="68%">
