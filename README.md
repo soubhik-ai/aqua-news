@@ -216,6 +216,40 @@ Every news source has an editorial perspective. Aqua News doesn't hide this — 
 - The **bias bar** shows where every source in the cluster falls on the spectrum
 - This is transparent and configurable — disagree with a score? Change it
 
+## MCP Server (AI Integration)
+
+Aqua News includes an [MCP](https://modelcontextprotocol.io) server that lets AI assistants query your news data directly.
+
+```bash
+pip install -r mcp/requirements.txt
+```
+
+Add to Claude Desktop (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "aqua-news": {
+      "command": "python",
+      "args": ["path/to/aqua-news/mcp/server.py"],
+      "env": {
+        "AQUA_NEWS_URL": "https://storage.googleapis.com/YOUR_BUCKET/latest.json"
+      }
+    }
+  }
+}
+```
+
+**Available tools:**
+
+| Tool | What it does |
+|------|-------------|
+| `get_stories` | Get today's clusters, filter by category/region/source count |
+| `search_stories` | Keyword search across titles, summaries, and sources |
+| `get_bias_analysis` | Find the most polarizing, consensus, left, or right-leaning stories |
+
+See [mcp/README.md](mcp/README.md) for full docs.
+
 ## Roadmap
 
 - [ ] Per-article bias detection using NLP (not just per-source)
