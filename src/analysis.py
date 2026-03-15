@@ -1,4 +1,4 @@
-"""Statistical Analysis & Synthesis — lead selection, summarization, bias metrics."""
+"""Statistical Analysis & Synthesis - lead selection, summarization, bias metrics."""
 
 import logging
 from dataclasses import dataclass

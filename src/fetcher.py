@@ -1,4 +1,4 @@
-"""Daily fetch job — runs the full pipeline and uploads results to GCS.
+"""Daily fetch job - runs the full pipeline and uploads results to GCS.
 
 Results are cached locally by date so the pipeline only scrapes feeds once
 per day.  Subsequent runs on the same day reuse the local cache.
@@ -147,7 +147,7 @@ def main():
     logger.info("Starting daily fetch...")
     results = run_pipeline()
     if not results:
-        logger.warning("No clusters produced — skipping upload")
+        logger.warning("No clusters produced - skipping upload")
         return
     upload_to_gcs(results)
     logger.info("Done.")

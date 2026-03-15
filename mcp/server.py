@@ -1,4 +1,4 @@
-"""Aqua News MCP Server — exposes clustered news data to AI assistants."""
+"""Aqua News MCP Server - exposes clustered news data to AI assistants."""
 
 import json
 import os
@@ -97,7 +97,7 @@ def get_stories(
             f"Categories: {', '.join(c.get('categories', []))}\n"
             f"Regions: {', '.join(c.get('regions', []))}\n"
             f"Sources: {c['article_count']}\n"
-            f"Bias — mean: {bm['mean']:+.1f}, range: [{bm['min_score']:+d}, {bm['max_score']:+d}]\n\n"
+            f"Bias - mean: {bm['mean']:+.1f}, range: [{bm['min_score']:+d}, {bm['max_score']:+d}]\n\n"
             f"Summary: {c['summary']}\n\n"
             f"All sources:\n" + "\n".join(sources)
         )

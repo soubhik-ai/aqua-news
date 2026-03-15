@@ -1,230 +1,162 @@
-<p align="center">
-  <h1 align="center">AQUA NEWS</h1>
-  <p align="center">
-    <strong>See the news from every angle.</strong><br>
-    Open-source news aggregator that clusters stories across sources and exposes editorial bias.
-  </p>
-  <p align="center">
-    <a href="https://github.com/soubhik-ai/aqua-news/actions/workflows/ci.yml"><img src="https://github.com/soubhik-ai/aqua-news/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-    <a href="https://github.com/soubhik-ai/aqua-news/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
-    <img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python 3.11+">
-    <img src="https://img.shields.io/badge/next.js-16-black.svg" alt="Next.js 16">
-    <a href="https://github.com/soubhik-ai/aqua-news/stargazers"><img src="https://img.shields.io/github/stars/soubhik-ai/aqua-news?style=social" alt="Stars"></a>
-  </p>
-</p>
+# aqua news
 
----
+[![CI](https://github.com/soubhik-ai/aqua-news/actions/workflows/ci.yml/badge.svg)](https://github.com/soubhik-ai/aqua-news/actions/workflows/ci.yml)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)
+![Next.js 16](https://img.shields.io/badge/next.js-16-black.svg)
 
-Most news apps show you one perspective. Aqua News shows you **all of them** — then tells you where each one sits on the bias spectrum.
+Every news app shows you one side of a story. This one shows you all of them.
 
-It ingests RSS feeds from dozens of sources across regions, clusters articles about the same story using NLP, picks the most centrist source as the lead, and visualizes the full bias distribution. No AI-generated summaries — just extractive summarization that pulls key sentences from real journalism.
+aqua news pulls articles from dozens of RSS feeds, figures out which ones are about the same story, and shows you where each source lands on the bias spectrum. The "lead" article is always the most centrist source. No AI-generated text, no hallucinated summaries. Just extractive NLP that pulls key sentences from real journalism.
 
-<!-- TODO: Replace with actual screenshot -->
-<!-- ![Aqua News Screenshot](docs/screenshot.png) -->
+I built this because I was tired of reading the same event described completely differently depending on which app I opened. Now I can see the full picture in one place.
 
-## Why Aqua News?
+<!-- TODO: add screenshot -->
 
-| Feature | Aqua News | Google News | Apple News | Ground News |
-|---------|-----------|-------------|------------|-------------|
-| Open source | Yes | No | No | No |
-| Bias spectrum per story | Yes | No | No | Partial |
-| Self-hostable | Yes | No | No | No |
-| No AI hallucination | Yes (extractive only) | Uses AI | Uses AI | No summaries |
-| Custom feed sources | Yes | No | No | No |
-| Free | Yes | Yes | Freemium | Freemium |
-
-## How It Works
+## how it works
 
 ```
-RSS Feeds (configurable)
-       |
-       v
- ┌─────────────┐     ┌──────────────┐     ┌──────────────┐
- │ Acquisition  │────>│  Processing  │────>│   Analysis   │
- │  parallel    │     │  TF-IDF +    │     │  lead pick + │
- │  fetch +     │     │  DBSCAN      │     │  LexRank     │
- │  clean text  │     │  clustering  │     │  summarize   │
- └─────────────┘     └──────────────┘     └──────────────┘
-       |                                         |
-       v                                         v
-  Local daily cache                        JSON output
-  (fetch once/day)                              |
-                                                v
-                                         ┌──────────────┐
-                                         │   Next.js    │
-                                         │  Dashboard   │
-                                         └──────────────┘
+RSS Feeds --> Acquisition --> Processing --> Analysis --> Dashboard
+              (parallel       (TF-IDF +     (pick most    (Next.js +
+               fetch +         DBSCAN        centrist      bias bar +
+               clean text)     clustering)   source +      search +
+                                             LexRank)      tabs)
 ```
 
-1. **Acquisition** — Parses RSS feeds in parallel, extracts full article text via newspaper3k, deduplicates by URL, strips per-domain boilerplate, rejects garbage content.
+1. **Acquisition** - fetches RSS feeds in parallel, extracts full article text with newspaper3k, deduplicates, strips boilerplate (cookie banners, subscription prompts, etc)
 
-2. **Processing** — Builds TF-IDF vectors from article texts and clusters them using DBSCAN on cosine similarity. Articles covering the same story get grouped together.
+2. **Processing** - turns articles into TF-IDF vectors and clusters them with DBSCAN. articles about the same story end up in the same cluster.
 
-3. **Analysis** — For each cluster: picks the least-biased article as lead, generates a 3-sentence extractive summary using LexRank, computes bias distribution metrics.
+3. **Analysis** - for each cluster, picks the least biased source as the lead, generates a 3-sentence summary using LexRank, computes bias stats across all sources
 
-4. **Dashboard** — Next.js frontend with category tabs, search, pagination, bias spectrum visualization per story, and share buttons.
+4. **Dashboard** - Next.js frontend with category tabs, search, pagination, and a bias spectrum bar for every story
 
-## Quick Start
+## why not just use google news?
 
-### Local development (no cloud required)
+| | aqua news | Google News | Apple News | Ground News |
+|---|---|---|---|---|
+| open source | yes | no | no | no |
+| bias spectrum per story | yes | no | no | partial |
+| self-hostable | yes | no | no | no |
+| no AI hallucination | yes (extractive only) | uses AI | uses AI | no summaries |
+| custom sources | yes | no | no | no |
+| free | yes | yes | freemium | freemium |
+
+## quick start
+
+### local dev (no cloud needed)
 
 ```bash
-# Clone
 git clone https://github.com/soubhik-ai/aqua-news.git
 cd aqua-news
 
-# Backend
+# backend
 pip install -r requirements.txt
 python -c "import nltk; nltk.download('punkt'); nltk.download('punkt_tab')"
 
-# Copy and customize your feeds
+# set up your feeds
 cp config/feeds.example.json config/feeds.json
-# Edit config/feeds.json with your preferred sources and bias scores
+# edit feeds.json with your preferred sources and bias scores
 
-# Run the pipeline (outputs to local cache)
+# run the pipeline
 python src/fetcher.py
 
-# Frontend
+# frontend
 cd frontend && npm install && npm run dev
 ```
 
-### Docker
+### docker
 
 ```bash
 cp config/feeds.example.json config/feeds.json
 docker compose up
 ```
 
-### Cloud deployment (GCP)
+## configuration
 
-See [Deployment Guide](#deployment) below for Cloud Run + Secret Manager setup.
+### feeds
 
-## Configuration
-
-### Feed sources
-
-Define your sources in `config/feeds.json` (see `config/feeds.example.json` for the format):
+Your feeds live in `config/feeds.json`. See `config/feeds.example.json` for the format:
 
 ```json
 {
-  "feeds": [
-    {
-      "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
-      "domain": "bbc.co.uk",
-      "region": "GLOBAL",
-      "category": "general",
-      "bias_score": -1
-    }
-  ],
-  "settings": {
-    "similarity_threshold": 0.55,
-    "summary_sentences": 3,
-    "min_document_frequency": 2,
-    "max_articles_per_feed": 20
-  }
+  "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
+  "domain": "bbc.co.uk",
+  "region": "GLOBAL",
+  "category": "general",
+  "bias_score": -1
 }
 ```
 
-| Field | Description |
-|-------|-------------|
-| `url` | RSS feed URL |
-| `domain` | Display name for the source |
-| `region` | `IN`, `HK`, `GLOBAL`, or any custom region |
-| `category` | `general`, `finance`, `geopolitics`, `science`, `technology`, `culture` |
-| `bias_score` | -10 (far left) to +10 (far right) — your editorial judgment |
+`bias_score` is your call. -10 is far left, +10 is far right, 0 is center. The app picks the source closest to 0 as the lead for each story cluster. Disagree with a score? Change it.
 
-### Pipeline settings
+### pipeline settings
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `similarity_threshold` | 0.55 | Cosine similarity needed to cluster two articles together |
-| `summary_sentences` | 3 | Sentences per cluster summary |
-| `min_document_frequency` | 2 | Min documents a term must appear in for TF-IDF |
-| `max_articles_per_feed` | 20 | Max articles fetched per RSS feed |
+| setting | default | what it does |
+|---|---|---|
+| `similarity_threshold` | 0.55 | how similar two articles need to be to get clustered together |
+| `summary_sentences` | 3 | sentences per summary |
+| `min_document_frequency` | 2 | min docs a term must appear in for TF-IDF |
+| `max_articles_per_feed` | 20 | max articles per feed |
 
-### Environment variables
+### env vars
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `GCS_BUCKET` | For cloud deploy | GCS bucket name for storing pipeline output |
-| `GCS_BLOB` | No | Blob name (default: `latest.json`) |
-| `FEEDS_SECRET` | For cloud deploy | GCP Secret Manager secret name containing feeds.json |
-| `GCP_PROJECT` | For cloud deploy | GCP project ID |
+| var | needed for | what |
+|---|---|---|
+| `GCS_BUCKET` | cloud deploy | GCS bucket for pipeline output |
+| `GCS_BLOB` | no | blob name, defaults to `latest.json` |
+| `FEEDS_SECRET` | cloud deploy | Secret Manager secret with your feeds.json |
+| `GCP_PROJECT` | cloud deploy | your GCP project ID |
 
-## Project Structure
+## project structure
 
 ```
 src/
   acquisition.py      # RSS ingestion, text extraction, boilerplate filtering
   processing.py       # TF-IDF vectorization, DBSCAN clustering
-  analysis.py         # Lead selection, LexRank summarization, bias metrics
-  fetcher.py          # Pipeline orchestrator + caching + upload
+  analysis.py         # lead selection, LexRank summarization, bias metrics
+  fetcher.py          # pipeline orchestrator + caching + upload
 frontend/
-  app/page.tsx        # Next.js entry point (SSR from GCS)
+  app/page.tsx        # Next.js SSR page
   app/components/     # ClusterCard, BiasBar, ShareButtons, ClientHome
 config/
-  feeds.example.json  # Example feed config (copy to feeds.json)
+  feeds.example.json  # example feed config (copy to feeds.json)
 tests/                # pytest suite
-Dockerfile            # Next.js frontend container
-Dockerfile.fetcher    # Python pipeline container
-docker-compose.yml    # Both services
+mcp/
+  server.py           # MCP server for AI assistants
+Dockerfile            # frontend container
+Dockerfile.fetcher    # pipeline container
+docker-compose.yml    # both services
 ```
 
-## Deployment
-
-### Google Cloud Run
+## deploying to cloud run
 
 ```bash
-# 1. Create secrets
+# create secrets
 echo -n "your-bucket" | gcloud secrets create gcs-bucket --data-file=-
 echo -n "latest.json" | gcloud secrets create gcs-blob --data-file=-
 gcloud secrets create feeds-config --data-file=config/feeds.json
 
-# 2. Deploy frontend
+# deploy frontend
 gcloud run deploy aqua-news \
-  --source=. \
-  --port=3000 \
-  --allow-unauthenticated \
+  --source=. --port=3000 --allow-unauthenticated \
   --set-secrets="GCS_BUCKET=gcs-bucket:latest,GCS_BLOB=gcs-blob:latest"
 
-# 3. Deploy fetcher as a job
+# deploy fetcher as a job
 gcloud run jobs deploy aqua-news-fetcher \
-  --source=. \
-  --command="python" --args="src/fetcher.py" \
+  --source=. --command="python" --args="src/fetcher.py" \
   --set-secrets="GCS_BUCKET=gcs-bucket:latest,GCS_BLOB=gcs-blob:latest,FEEDS_SECRET=feeds-config:latest"
-
-# 4. Schedule the fetcher (daily)
-gcloud scheduler jobs create http aqua-news-daily \
-  --schedule="0 6 * * *" \
-  --uri="https://REGION-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/PROJECT/jobs/aqua-news-fetcher:run" \
-  --http-method=POST
 ```
 
-## Testing
+## MCP server
 
-```bash
-python -m pytest tests/ -v
-```
-
-## Bias Methodology
-
-Every news source has an editorial perspective. Aqua News doesn't hide this — it quantifies it.
-
-- Each feed gets a `bias_score` from -10 (far left) to +10 (far right)
-- Scores are assigned by the instance operator (you) based on your assessment
-- The **lead article** for each story cluster is the source closest to center (lowest `|bias_score|`)
-- The **bias bar** shows where every source in the cluster falls on the spectrum
-- This is transparent and configurable — disagree with a score? Change it
-
-## MCP Server (AI Integration)
-
-Aqua News includes an [MCP](https://modelcontextprotocol.io) server that lets AI assistants query your news data directly.
+There's an MCP server that lets AI assistants (Claude, etc) query the news data directly.
 
 ```bash
 pip install -r mcp/requirements.txt
 ```
 
-Add to Claude Desktop (`claude_desktop_config.json`):
+Add to Claude Desktop config:
 
 ```json
 {
@@ -240,31 +172,39 @@ Add to Claude Desktop (`claude_desktop_config.json`):
 }
 ```
 
-**Available tools:**
+Three tools: `get_stories` (filter by category/region), `search_stories` (keyword search), `get_bias_analysis` (find the most polarizing or consensus stories). See [mcp/README.md](mcp/README.md) for details.
 
-| Tool | What it does |
-|------|-------------|
-| `get_stories` | Get today's clusters, filter by category/region/source count |
-| `search_stories` | Keyword search across titles, summaries, and sources |
-| `get_bias_analysis` | Find the most polarizing, consensus, left, or right-leaning stories |
+## tests
 
-See [mcp/README.md](mcp/README.md) for full docs.
+```bash
+python -m pytest tests/ -v
+```
 
-## Roadmap
+## how bias scoring works
 
-- [ ] Per-article bias detection using NLP (not just per-source)
-- [ ] Sentiment analysis overlay on bias spectrum
-- [ ] RSS feed health monitoring dashboard
-- [ ] User accounts with personalized feed configs
-- [ ] Browser extension for inline bias context
-- [ ] Mobile app (React Native)
-- [ ] Multi-language support
-- [ ] Webhook notifications for breaking story clusters
+Every news source has a perspective. This project doesn't hide that, it quantifies it.
 
-## Contributing
+- Each feed gets a bias_score from -10 to +10
+- You assign the scores based on your own judgment
+- The lead article for each story is the one closest to center
+- The bias bar shows where every source sits on the spectrum
+- It's fully transparent and configurable
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a PR.
+## roadmap
 
-## License
+- [ ] per-article bias detection using NLP (not just per-source)
+- [ ] sentiment analysis overlay
+- [ ] feed health monitoring
+- [ ] user accounts with personalized configs
+- [ ] browser extension
+- [ ] mobile app
+- [ ] multi-language support
+- [ ] webhook notifications for breaking clusters
 
-[MIT](LICENSE) - Use it however you want.
+## contributing
+
+PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## license
+
+[MIT](LICENSE)

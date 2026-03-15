@@ -1,4 +1,4 @@
-"""Processing & Clustering Layer — TF-IDF vectorization + similarity clustering."""
+"""Processing & Clustering Layer - TF-IDF vectorization + similarity clustering."""
 
 import logging
 from dataclasses import dataclass
@@ -58,7 +58,7 @@ def cluster_articles(
     clusters_map: dict[int, list[ArticleRecord]] = {}
     for label, article in zip(labels, articles):
         if label == -1:
-            continue  # noise — unclustered singleton
+            continue  # noise - unclustered singleton
         clusters_map.setdefault(label, []).append(article)
 
     clusters = [

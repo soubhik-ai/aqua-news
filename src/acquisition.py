@@ -1,4 +1,4 @@
-"""Data Acquisition Layer — async RSS ingestion + full-text extraction."""
+"""Data Acquisition Layer - async RSS ingestion + full-text extraction."""
 
 import asyncio
 import json
@@ -45,7 +45,7 @@ _BOILERPLATE_STRIPS: dict[str, list[tuple[re.Pattern, str]]] = {
     ],
 }
 
-# Shared thread pool — newspaper3k is blocking I/O, so we parallelize via threads.
+# Shared thread pool - newspaper3k is blocking I/O, so we parallelize via threads.
 # 30 workers lets ~30 article downloads run simultaneously.
 _executor = ThreadPoolExecutor(max_workers=30)
 
