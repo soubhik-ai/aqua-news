@@ -3,6 +3,7 @@
 import asyncio
 import json
 import logging
+import os
 import re
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, asdict
@@ -75,9 +76,23 @@ class ArticleRecord:
 
 
 def load_config(path: str = "config/feeds.json") -> tuple[list[FeedSource], dict]:
-    """Load feed sources and settings from JSON config."""
-    with open(path, "r") as f:
-        data = json.load(f)
+    """Load feed sources and settings from JSON config.
+
+    If the env var ``FEEDS_SECRET`` is set (a GCP Secret Manager secret
+    name), the config is fetched from Secret Manager.  Otherwise falls
+    back to the local filesystem *path*.
+    """
+    secret_name = os.environ.get("FEEDS_SECRET")
+    if secret_name:
+        from google.cloud import secretmanager
+        project = os.environ.get("GCP_PROJECT", "aqua-news")
+        client = secretmanager.SecretManagerServiceClient()
+        name = f"projects/{project}/secrets/{secret_name}/versions/latest"
+        response = client.access_secret_version(request={"name": name})
+        data = json.loads(response.payload.data.decode("utf-8"))
+    else:
+        with open(path, "r") as f:
+            data = json.load(f)
     sources = [FeedSource(**feed) for feed in data["feeds"]]
     settings = data.get("settings", {})
     return sources, settings

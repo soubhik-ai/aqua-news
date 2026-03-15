@@ -8,3 +8,8 @@ build/
 nltk_data/
 cache/
 streamlit.log
+config/feeds.json
+*-credentials.json
+*-key.json
+service-account*.json
+*.pem

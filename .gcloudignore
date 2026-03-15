@@ -7,3 +7,8 @@ __pycache__
 *.pyc
 .env
 nltk_data
+*-credentials.json
+*-key.json
+service-account*.json
+*.pem
+config/feeds.json

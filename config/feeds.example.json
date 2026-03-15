@@ -1,0 +1,38 @@
+{
+  "feeds": [
+    {
+      "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
+      "domain": "bbc.co.uk",
+      "region": "GLOBAL",
+      "category": "general",
+      "bias_score": 0
+    },
+    {
+      "url": "https://feeds.npr.org/1001/rss.xml",
+      "domain": "npr.org",
+      "region": "GLOBAL",
+      "category": "general",
+      "bias_score": 0
+    },
+    {
+      "url": "https://www.aljazeera.com/xml/rss/all.xml",
+      "domain": "aljazeera.com",
+      "region": "GLOBAL",
+      "category": "geopolitics",
+      "bias_score": 0
+    },
+    {
+      "url": "https://feeds.feedburner.com/TechCrunch",
+      "domain": "techcrunch.com",
+      "region": "GLOBAL",
+      "category": "technology",
+      "bias_score": 0
+    }
+  ],
+  "settings": {
+    "similarity_threshold": 0.55,
+    "summary_sentences": 3,
+    "min_document_frequency": 2,
+    "max_articles_per_feed": 20
+  }
+}

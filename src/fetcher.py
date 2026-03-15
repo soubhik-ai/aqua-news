@@ -28,8 +28,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-BUCKET_NAME = os.environ.get("GCS_BUCKET", "aqua-news-cache")
-BLOB_NAME = "latest.json"
+BUCKET_NAME = os.environ["GCS_BUCKET"]
+BLOB_NAME = os.environ.get("GCS_BLOB", "latest.json")
 CACHE_DIR = Path(__file__).resolve().parent.parent / "cache"
 
 
@@ -140,8 +140,7 @@ def upload_to_gcs(data: list[dict]) -> None:
         json.dumps(payload, ensure_ascii=False, default=_default),
         content_type="application/json",
     )
-    blob.make_public()
-    logger.info("Uploaded %d clusters to gs://%s/%s (public)", len(data), BUCKET_NAME, BLOB_NAME)
+    logger.info("Uploaded %d clusters to gs://%s/%s", len(data), BUCKET_NAME, BLOB_NAME)
 
 
 def main():
