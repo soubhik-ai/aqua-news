@@ -7,3 +7,4 @@ build/
 .env
 nltk_data/
 cache/
+streamlit.log

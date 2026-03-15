@@ -2,7 +2,7 @@ services:
   news-aggregator:
     build: .
     ports:
-      - "${PORT:-8501}:8501"
+      - "${PORT:-3000}:3000"
     volumes:
       - ./config:/app/config:ro
     environment:

@@ -1,31 +1,18 @@
-FROM python:3.11-slim
+FROM node:20-alpine
 
 WORKDIR /app
 
-# System deps for lxml / newspaper
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        build-essential \
-        libxml2-dev \
-        libxslt1-dev \
-        libjpeg62-turbo-dev \
-        zlib1g-dev \
-        curl && \
-    rm -rf /var/lib/apt/lists/*
+# Copy the frontend dependencies
+COPY frontend/package*.json ./
+RUN npm ci
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy the rest of the frontend source
+COPY frontend/ ./
+RUN npm run build
 
-# Download NLTK punkt tokenizer (required by sumy + newspaper)
-RUN python -c "import nltk; nltk.download('punkt'); nltk.download('punkt_tab')"
+EXPOSE 3000
 
-COPY . .
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
-EXPOSE 8501
-
-HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health || exit 1
-
-ENTRYPOINT ["streamlit", "run", "src/app.py", \
-            "--server.port=8501", \
-            "--server.address=0.0.0.0", \
-            "--server.headless=true"]
+CMD ["npm", "start"]
