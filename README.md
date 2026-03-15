@@ -12,10 +12,8 @@ aqua news pulls articles from dozens of RSS feeds, figures out which ones are ab
 I built this because I was tired of reading the same event described completely differently depending on which app I opened. Now I can see the full picture in one place.
 
 <p align="center">
-  <img src="docs/screenshot.png" alt="Aqua News desktop" width="720">
-</p>
-<p align="center">
-  <img src="docs/screenshot-mobile.png" alt="Aqua News mobile" width="240">
+  <img src="docs/screenshot.png" alt="Aqua News desktop" width="68%">
+  <img src="docs/screenshot-mobile.png" alt="Aqua News mobile" width="18%">
 </p>
 
 ## how it works
