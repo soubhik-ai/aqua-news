@@ -1,6 +1,6 @@
-import React from "react";
-import { cn } from "@/lib/utils";
-import { Share2, Link as LinkIcon, Mail } from "lucide-react";
+"use client";
+import React, { useState, useRef, useEffect } from "react";
+import { Share2, Link as LinkIcon, Mail, X } from "lucide-react";
 
 interface ShareButtonsProps {
   title: string;
@@ -8,6 +8,19 @@ interface ShareButtonsProps {
 }
 
 export function ShareButtons({ title, url }: ShareButtonsProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Close on click outside
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
   const encTitle = encodeURIComponent(title);
   const encUrl = encodeURIComponent(url);
 
@@ -35,35 +48,41 @@ export function ShareButtons({ title, url }: ShareButtonsProps) {
       href: `mailto:?subject=${encTitle}&body=${encTitle}%0A%0A${encUrl}`,
       icon: <Mail className="w-4 h-4" />,
     },
+    {
+      name: "Open article",
+      href: url,
+      icon: <LinkIcon className="w-4 h-4" />,
+    },
   ];
 
   return (
-    <div className="flex gap-2 items-center flex-wrap pt-4 mt-6 border-t border-stone-200">
-      <span className="text-xs uppercase tracking-wider text-stone-500 font-medium mr-2 flex items-center gap-1">
-        <Share2 className="w-3 h-3" />
-        Share
-      </span>
-      {links.map((link) => (
-        <a
-          key={link.name}
-          href={link.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 px-3 py-1.5 bg-stone-100/50 hover:bg-stone-900 hover:text-white text-stone-600 border border-stone-200 hover:border-stone-900 rounded transition-all text-[11px] font-mono tracking-tight"
-        >
-          {link.icon}
-          {link.name}
-        </a>
-      ))}
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-2 px-3 py-1.5 bg-stone-100/50 hover:bg-stone-900 hover:text-white text-stone-600 border border-stone-200 hover:border-stone-900 rounded transition-all text-[11px] font-mono tracking-tight ml-auto"
+    <div className="relative inline-block mt-4" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 px-2.5 py-1.5 text-stone-400 hover:text-stone-900 transition-colors rounded-sm hover:bg-stone-50"
+        aria-label="Share"
       >
-        <LinkIcon className="w-3 h-3" />
-        Open Lead
-      </a>
+        <Share2 className="w-4 h-4" />
+        <span className="text-[11px] font-mono uppercase tracking-wider">Share</span>
+      </button>
+
+      {open && (
+        <div className="absolute bottom-full left-0 mb-2 bg-white border border-stone-200 rounded shadow-lg z-30 min-w-[160px] py-1 animate-in fade-in slide-in-from-bottom-2 duration-150">
+          {links.map((link) => (
+            <a
+              key={link.name}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 text-sm text-stone-600 hover:bg-stone-50 hover:text-stone-900 transition-colors"
+            >
+              {link.icon}
+              <span className="font-mono text-xs">{link.name}</span>
+            </a>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
